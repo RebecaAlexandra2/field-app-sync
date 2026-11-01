@@ -107,3 +107,32 @@ export function usePhotos(entranceId: string): PhotoRow[] {
     [entranceId],
   ).data;
 }
+
+function exifTime(shotAt: string | null): string | null {
+  const m = shotAt?.match(
+    /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/,
+  );
+
+  if (!m) return null;
+
+  const [y, mo, d, h, mi, se] = m.slice(1).map(Number);
+  return new Date(y, mo - 1, d, h, mi, se).toISOString();
+}
+
+export async function pickPhoto(
+  entranceId: string,
+): Promise<ExifSummary | null> {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    exif: true,
+    quality: 1,
+  });
+
+  if (result.canceled) return null;
+
+  const asset = result.assets[0];
+  const takenAt =
+    exifTime(readExif(asset.exif).shotAt) ?? new Date().toISOString();
+
+  return save(entranceId, asset, null, null, takenAt);
+}
