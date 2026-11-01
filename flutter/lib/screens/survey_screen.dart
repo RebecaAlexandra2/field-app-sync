@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../contract/contract.dart';
+import '../location.dart';
 import '../providers.dart';
 
 class SurveyScreen extends ConsumerStatefulWidget {
@@ -25,6 +27,7 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
 
   Map<String, String> _ruleErrors = {};
   bool _saving = false;
+  bool _locating = false;
   String? _saveError;
 
   void _init(Entrance e) {
@@ -59,35 +62,60 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
 
   int? _int(String key) => int.tryParse(_text[key]!.text.trim());
 
-  double? _double(String key) =>
-      double.tryParse(_text[key]!.text.trim());
+  double? _double(String key) => double.tryParse(_text[key]!.text.trim());
 
   Entrance _candidate() => Entrance(
-        id: _entrance.id,
-        createdAt: _entrance.createdAt,
-        updatedAt: _entrance.updatedAt,
-        buildingId: _entrance.buildingId,
-        lat: _entrance.lat,
-        lng: _entrance.lng,
-        street: _text['street']!.text.trim(),
-        number: _text['number']!.text.trim(),
-        entranceName: _text['entranceName']!.text.trim(),
-        coordsConfirmed: _coordsConfirmed,
-        correctedLat: _coordsConfirmed ? null : _double('correctedLat'),
-        correctedLng: _coordsConfirmed ? null : _double('correctedLng'),
-        addressConfirmed: _addressConfirmed,
-        stories: _int('stories'),
-        flats: _int('flats'),
-        elevators: _int('elevators'),
-        yearBuilt: _int('yearBuilt'),
-        groundFloorCommercial: _groundFloorCommercial,
-        comment: _text['comment']!.text.trim().isEmpty
-            ? null
-            : _text['comment']!.text.trim(),
-        surveyStatus: _entrance.surveyStatus,
-        surveyedBy: _entrance.surveyedBy,
-        surveyedAt: _entrance.surveyedAt,
-      );
+    id: _entrance.id,
+    createdAt: _entrance.createdAt,
+    updatedAt: _entrance.updatedAt,
+    buildingId: _entrance.buildingId,
+    lat: _entrance.lat,
+    lng: _entrance.lng,
+    street: _text['street']!.text.trim(),
+    number: _text['number']!.text.trim(),
+    entranceName: _text['entranceName']!.text.trim(),
+    coordsConfirmed: _coordsConfirmed,
+    correctedLat: _coordsConfirmed ? null : _double('correctedLat'),
+    correctedLng: _coordsConfirmed ? null : _double('correctedLng'),
+    addressConfirmed: _addressConfirmed,
+    stories: _int('stories'),
+    flats: _int('flats'),
+    elevators: _int('elevators'),
+    yearBuilt: _int('yearBuilt'),
+    groundFloorCommercial: _groundFloorCommercial,
+    comment: _text['comment']!.text.trim().isEmpty
+        ? null
+        : _text['comment']!.text.trim(),
+    surveyStatus: _entrance.surveyStatus,
+    surveyedBy: _entrance.surveyedBy,
+    surveyedAt: _entrance.surveyedAt,
+  );
+
+  Future<void> _usePosition() async {
+    setState(() {
+      _locating = true;
+      _saveError = null;
+    });
+
+    try {
+      final fix = await locate(context, ref);
+      if (!mounted) return;
+
+      if (fix == null) {
+        setState(() => _saveError = 'Location: not allowed');
+        return;
+      }
+
+      _text['correctedLat']!.text = fix.lat.toStringAsFixed(5);
+      _text['correctedLng']!.text = fix.lng.toStringAsFixed(5);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _saveError = 'Could not get location: $error');
+      }
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
 
   Future<void> _submit() async {
     if (_saving) return;
@@ -114,6 +142,12 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
           .read(databaseProvider)
           .submitSurvey(candidate, ref.read(meProvider));
 
+      try {
+        await HapticFeedback.mediumImpact();
+      } catch (_) {
+        // Salvarea ramane valida daca vibratia nu este disponibila.
+      }
+
       if (mounted) context.pop();
     } catch (error) {
       if (mounted) {
@@ -129,32 +163,26 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
     String label,
     String? Function(String?) validator, {
     TextInputType? keyboard,
-  }) =>
-      TextFormField(
-        controller: _text[key],
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-        keyboardType: keyboard,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        validator: validator,
-      );
+  }) => TextFormField(
+    controller: _text[key],
+    decoration: InputDecoration(
+      labelText: label,
+      border: const OutlineInputBorder(),
+    ),
+    keyboardType: keyboard,
+    autovalidateMode: AutovalidateMode.onUserInteraction,
+    validator: validator,
+  );
 
-  String? Function(String?) _intRule(
-    String? Function(int?) rule,
-  ) =>
-      (s) => (s ?? '').trim().isNotEmpty &&
-              int.tryParse(s!.trim()) == null
-          ? 'A whole number'
-          : rule(int.tryParse((s ?? '').trim()));
+  String? Function(String?) _intRule(String? Function(int?) rule) =>
+      (s) => (s ?? '').trim().isNotEmpty && int.tryParse(s!.trim()) == null
+      ? 'A whole number'
+      : rule(int.tryParse((s ?? '').trim()));
 
-  String? Function(String?) _coordRule(
-    String? Function(num?) rule,
-  ) =>
+  String? Function(String?) _coordRule(String? Function(num?) rule) =>
       (s) => (s ?? '').trim().isEmpty
-          ? null
-          : rule(double.tryParse(s!.trim()) ?? double.nan);
+      ? null
+      : rule(double.tryParse(s!.trim()) ?? double.nan);
 
   @override
   Widget build(BuildContext context) {
@@ -162,26 +190,19 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
 
     if (_text.isEmpty) {
       if (found.isLoading) {
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       }
 
       if (found.hasError) {
         return Scaffold(
           appBar: AppBar(title: const Text('Survey')),
-          body: Center(
-            child: Text('Could not load entrance: ${found.error}'),
-          ),
+          body: Center(child: Text('Could not load entrance: ${found.error}')),
         );
       }
 
       final e = found.value;
-
       if (e == null) {
-        return const Scaffold(
-          body: Center(child: Text('No such entrance.')),
-        );
+        return const Scaffold(body: Center(child: Text('No such entrance.')));
       }
 
       _init(e);
@@ -200,13 +221,13 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           children: [
             SwitchListTile(
               title: const Text('The pin is at the door'),
               subtitle: _ruleError('coordsConfirmed'),
               value: _coordsConfirmed,
-              onChanged: (value) =>
-                  setState(() => _coordsConfirmed = value),
+              onChanged: (value) => setState(() => _coordsConfirmed = value),
             ),
             if (!_coordsConfirmed) ...[
               _field(
@@ -224,6 +245,14 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
               ),
               if (_ruleErrors['correctedLng'] != null)
                 _ruleError('correctedLng')!,
+              const SizedBox(height: 8),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                onPressed: _locating ? null : _usePosition,
+                child: Text(_locating ? 'Finding you...' : 'Use my position'),
+              ),
               gap,
             ],
             _field('street', 'Street', validateStreet),
@@ -235,8 +264,7 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
               title: const Text('I checked the address'),
               subtitle: _ruleError('addressConfirmed'),
               value: _addressConfirmed,
-              onChanged: (value) =>
-                  setState(() => _addressConfirmed = value),
+              onChanged: (value) => setState(() => _addressConfirmed = value),
             ),
             _field(
               'stories',
@@ -245,12 +273,7 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
               keyboard: number,
             ),
             gap,
-            _field(
-              'flats',
-              'Flats',
-              _intRule(validateFlats),
-              keyboard: number,
-            ),
+            _field('flats', 'Flats', _intRule(validateFlats), keyboard: number),
             gap,
             _field(
               'elevators',
@@ -284,9 +307,7 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
             if (_saveError != null) ...[
               Text(
                 _saveError!,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               gap,
             ],
@@ -294,8 +315,8 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
               ),
-              onPressed: _saving ? null : _submit,
-              child: Text(_saving ? 'Saving…' : 'Submit survey'),
+              onPressed: _saving || _locating ? null : _submit,
+              child: Text(_saving ? 'Saving...' : 'Submit survey'),
             ),
           ],
         ),
