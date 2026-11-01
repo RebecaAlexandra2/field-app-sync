@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { compassPoint, locate, useHeading } from '../location';
-import { ensureCamera } from '../permissions';
 import { useField } from '../store';
 import { useColors } from '../theme';
 
@@ -10,12 +9,9 @@ export function HereCard() {
   const fix = useField((s) => s.fix);
   const heading = useField((s) => s.heading);
   const [busy, setBusy] = useState(false);
-  const [camera, setCamera] = useState('not asked yet');
   const [error, setError] = useState<string | null>(null);
 
   useHeading(fix !== null);
-
-  const button = [styles.button, { borderColor: colors.primary }];
 
   return (
     <View style={[styles.card, { borderColor: colors.border }]}>
@@ -41,44 +37,28 @@ export function HereCard() {
 
       {error && <Text style={{ color: colors.error }}>{error}</Text>}
 
-      <Text style={{ color: colors.text }}>Camera: {camera}</Text>
+      <Pressable
+        accessibilityRole="button"
+        style={[styles.button, { borderColor: colors.primary }]}
+        disabled={busy}
+        onPress={async () => {
+          setBusy(true);
+          setError(null);
 
-      <View style={styles.row}>
-        <Pressable
-          accessibilityRole="button"
-          style={button}
-          disabled={busy}
-          onPress={async () => {
-            setBusy(true);
-            setError(null);
-
-            try {
-              const position = await locate();
-              if (!position) setError('Location: not allowed');
-            } catch (e) {
-              setError(e instanceof Error ? e.message : String(e));
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <Text style={{ color: colors.primary, fontWeight: '700' }}>
-            Where am I?
-          </Text>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          style={button}
-          onPress={async () =>
-            setCamera((await ensureCamera()) ? 'allowed' : 'not allowed')
+          try {
+            const position = await locate();
+            if (!position) setError('Location: not allowed');
+          } catch (e) {
+            setError(e instanceof Error ? e.message : String(e));
+          } finally {
+            setBusy(false);
           }
-        >
-          <Text style={{ color: colors.primary, fontWeight: '700' }}>
-            Camera
-          </Text>
-        </Pressable>
-      </View>
+        }}
+      >
+        <Text style={{ color: colors.primary, fontWeight: '700' }}>
+          Where am I?
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -91,12 +71,7 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 8,
   },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-  },
   button: {
-    flex: 1,
     minHeight: 48,
     borderWidth: 2,
     borderRadius: 12,
