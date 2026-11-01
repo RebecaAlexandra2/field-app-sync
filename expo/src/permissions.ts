@@ -17,11 +17,7 @@ async function ensure(
 
   if (now.granted) return true;
 
-  if (!now.canAskAgain) {
-    offerSettings(what, why);
-    return false;
-  }
-
+  // Cererea permite și acordul separat al proiectului în Expo Go.
   const answer = await ask();
 
   if (answer.granted) return true;
@@ -32,6 +28,7 @@ async function ensure(
 
   return false;
 }
+
 
 function offerSettings(what: string, why: string) {
   if (Platform.OS === 'web') {
