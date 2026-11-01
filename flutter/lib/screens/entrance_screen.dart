@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'here_card.dart';
 import '../providers.dart';
 import 'status_chip.dart';
 
 String show(Object? value) => value == null
     ? '—'
     : value is bool
-        ? (value ? 'Yes' : 'No')
-        : '$value';
+    ? (value ? 'Yes' : 'No')
+    : '$value';
 
 class EntranceScreen extends ConsumerWidget {
   const EntranceScreen({super.key, required this.id});
@@ -21,9 +22,7 @@ class EntranceScreen extends ConsumerWidget {
     final found = ref.watch(entranceProvider(id));
 
     if (found.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (found.hasError) {
@@ -62,10 +61,7 @@ class EntranceScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            '${e.street} ${e.number}',
-            style: text.headlineSmall,
-          ),
+          Text('${e.street} ${e.number}', style: text.headlineSmall),
           Text('${e.entranceName} · ${building?.label ?? 'Building'}'),
           const SizedBox(height: 8),
           Align(
@@ -100,6 +96,8 @@ class EntranceScreen extends ConsumerWidget {
             onPressed: () => context.push('/entrances/${e.id}/survey'),
             child: const Text('Survey'),
           ),
+          const SizedBox(height: 8),
+          const HereCard(),
         ],
       ),
     );
