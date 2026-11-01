@@ -75,16 +75,16 @@ class Photos extends Table with RowColumns, LocalColumns {
 @DriftDatabase(tables: [Buildings, Entrances, Photos])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
-      : super(
-          executor ??
-              driftDatabase(
-                name: 'field',
-                web: DriftWebOptions(
-                  sqlite3Wasm: Uri.parse('sqlite3.wasm'),
-                  driftWorker: Uri.parse('drift_worker.js'),
-                ),
+    : super(
+        executor ??
+            driftDatabase(
+              name: 'field',
+              web: DriftWebOptions(
+                sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+                driftWorker: Uri.parse('drift_worker.js'),
               ),
-        );
+            ),
+      );
 
   @override
   int get schemaVersion => 1;
@@ -100,10 +100,7 @@ class AppDatabase extends _$AppDatabase {
     final n = await entrances.count().getSingle();
     if (n > 0) return;
 
-    const synced = {
-      'syncState': 'synced',
-      'lastError': null,
-    };
+    const synced = {'syncState': 'synced', 'lastError': null};
 
     await batch((b) {
       b.insertAll(buildings, [
@@ -120,21 +117,17 @@ class AppDatabase extends _$AppDatabase {
 
   Stream<List<Entrance>> watchEntrances() => select(entrances)
       .watch()
-      .map((rows) => [
-            for (final row in rows) Entrance.fromJson(row.toJson()),
-          ]);
+      .map((rows) => [for (final row in rows) Entrance.fromJson(row.toJson())]);
 
   Stream<Entrance?> watchEntrance(String id) =>
       (select(entrances)..where((e) => e.id.equals(id)))
           .watchSingleOrNull()
-          .map((row) =>
-              row == null ? null : Entrance.fromJson(row.toJson()));
+          .map((row) => row == null ? null : Entrance.fromJson(row.toJson()));
 
   Stream<Building?> watchBuilding(String id) =>
       (select(buildings)..where((b) => b.id.equals(id)))
           .watchSingleOrNull()
-          .map((row) =>
-              row == null ? null : Building.fromJson(row.toJson()));
+          .map((row) => row == null ? null : Building.fromJson(row.toJson()));
 
   Future<void> submitSurvey(Entrance surveyed, String me) async {
     final now = DateTime.now().toUtc().toIso8601String();
@@ -154,4 +147,7 @@ class AppDatabase extends _$AppDatabase {
       }),
     );
   }
+
+  Stream<List<PhotoRow>> watchPhotos(String entranceId) =>
+      (select(photos)..where((p) => p.entranceId.equals(entranceId))).watch();
 }

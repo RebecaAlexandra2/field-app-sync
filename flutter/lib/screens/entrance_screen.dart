@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
+import 'photos_card.dart';
 import 'here_card.dart';
 import '../providers.dart';
 import 'status_chip.dart';
@@ -98,6 +98,8 @@ class EntranceScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           const HereCard(),
+const SizedBox(height: 8),
+PhotosCard(entranceId: e.id),
         ],
       ),
     );
