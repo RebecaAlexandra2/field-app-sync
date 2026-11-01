@@ -150,4 +150,44 @@ class AppDatabase extends _$AppDatabase {
 
   Stream<List<PhotoRow>> watchPhotos(String entranceId) =>
       (select(photos)..where((p) => p.entranceId.equals(entranceId))).watch();
+
+  Future<String> addMissedEntrance(
+    double lat,
+    double lng,
+    String buildingId,
+    String entranceId,
+  ) async {
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    await transaction(() async {
+      await into(buildings).insert(
+        BuildingsCompanion.insert(
+          id: buildingId,
+          createdAt: now,
+          updatedAt: now,
+          label: 'New building',
+          comment: const Value('Added in the field: not on the office map.'),
+        ),
+      );
+
+      await into(entrances).insert(
+        EntrancesCompanion.insert(
+          id: entranceId,
+          createdAt: now,
+          updatedAt: now,
+          buildingId: buildingId,
+          lat: lat,
+          lng: lng,
+          street: '?',
+          number: '?',
+          entranceName: 'Sc. 1',
+          coordsConfirmed: true,
+          addressConfirmed: false,
+          surveyStatus: SurveyStatus.in_progress,
+        ),
+      );
+    });
+
+    return entranceId;
+  }
 }
