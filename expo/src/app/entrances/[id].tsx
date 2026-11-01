@@ -4,6 +4,7 @@ import { StatusChip } from '../../components/StatusChip';
 import { buildings } from '../../contract/fixtures';
 import { useEntrance } from '../../store';
 import { useColors } from '../../theme';
+import { HereCard } from '../../components/HereCard';
 
 const show = (v: number | boolean | string | null) =>
   v === null ? '—' : typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v);
@@ -63,6 +64,7 @@ export default function EntranceScreen() {
       >
         <Text style={{ color: colors.onPrimary, fontWeight: '700' }}>Survey</Text>
       </Pressable>
+      <HereCard />
     </ScrollView>
   );
 }
