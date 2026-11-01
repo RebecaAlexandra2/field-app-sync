@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Text, useColorScheme, View } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { openDb } from '../db/db';
 
 export default function RootLayout() {
@@ -26,14 +27,16 @@ export default function RootLayout() {
   if (state === 'opening') return null;
 
   return (
-    <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="entrances/[id]" options={{ title: 'Entrance' }} />
-        <Stack.Screen name="survey/[id]" options={{ title: 'Survey' }} />
-        <Stack.Screen name="conversations/[id]" options={{ title: 'Messages' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <KeyboardProvider>
+      <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="entrances/[id]" options={{ title: 'Entrance' }} />
+          <Stack.Screen name="survey/[id]" options={{ title: 'Survey' }} />
+          <Stack.Screen name="conversations/[id]" options={{ title: 'Messages' }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </KeyboardProvider>
   );
 }
