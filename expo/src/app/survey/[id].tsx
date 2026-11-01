@@ -12,7 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { EntranceSurvey } from '../../contract/contract';
+import { type Entrance, EntranceSurvey } from '../../contract/contract';
 import { submitSurvey, useEntrance } from '../../store';
 import { type Colors, useColors } from '../../theme';
 
@@ -25,7 +25,15 @@ const fromNumber = (n: number | null) =>
 export default function SurveyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const entrance = useEntrance(id);
+
+  if (!entrance) return null;
+
+  return <SurveyForm id={id} entrance={entrance} />;
+}
+
+function SurveyForm({ id, entrance }: { id: string; entrance: Entrance }) {
   const colors = useColors();
+
 
   const form = useForm({
     defaultValues: {
@@ -45,8 +53,8 @@ export default function SurveyScreen() {
     },
     // The contract's own schema validates the whole form on every change.
     validators: { onChange: EntranceSurvey },
-    onSubmit: ({ value }) => {
-      submitSurvey(id, EntranceSurvey.parse(value));
+    onSubmit: async ({ value }) => {
+      await submitSurvey(id, EntranceSurvey.parse(value));
       router.back();
     },
   });
