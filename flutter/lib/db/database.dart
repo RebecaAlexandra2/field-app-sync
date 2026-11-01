@@ -117,4 +117,41 @@ class AppDatabase extends _$AppDatabase {
       ]);
     });
   }
+
+  Stream<List<Entrance>> watchEntrances() => select(entrances)
+      .watch()
+      .map((rows) => [
+            for (final row in rows) Entrance.fromJson(row.toJson()),
+          ]);
+
+  Stream<Entrance?> watchEntrance(String id) =>
+      (select(entrances)..where((e) => e.id.equals(id)))
+          .watchSingleOrNull()
+          .map((row) =>
+              row == null ? null : Entrance.fromJson(row.toJson()));
+
+  Stream<Building?> watchBuilding(String id) =>
+      (select(buildings)..where((b) => b.id.equals(id)))
+          .watchSingleOrNull()
+          .map((row) =>
+              row == null ? null : Building.fromJson(row.toJson()));
+
+  Future<void> submitSurvey(Entrance surveyed, String me) async {
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    final row = surveyed.copyWith(
+      surveyStatus: SurveyStatus.submitted,
+      surveyedBy: me,
+      surveyedAt: now,
+      updatedAt: now,
+    );
+
+    await into(entrances).insertOnConflictUpdate(
+      EntranceRow.fromJson({
+        ...row.toJson(),
+        'syncState': 'pending',
+        'lastError': null,
+      }),
+    );
+  }
 }
