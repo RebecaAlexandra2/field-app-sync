@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { create } from 'zustand';
+import * as Crypto from 'expo-crypto';
 import type {
   Building,
   Entrance,
@@ -72,3 +73,48 @@ export const useField = create<FieldState>()((set) => ({
   setFix: (fix) => set({ fix }),
   setHeading: (heading) => set({ heading }),
 }));
+
+export async function addMissedEntrance(
+  at: { lat: number; lng: number },
+): Promise<string> {
+  const now = new Date().toISOString();
+  const buildingId = Crypto.randomUUID();
+  const entranceId = Crypto.randomUUID();
+
+  await db.insert(buildings).values({
+    id: buildingId,
+    createdAt: now,
+    updatedAt: now,
+    label: 'New building',
+    comment: 'Added in the field: not on the office map.',
+    syncState: 'pending',
+  });
+
+  await db.insert(entrances).values({
+    id: entranceId,
+    createdAt: now,
+    updatedAt: now,
+    buildingId,
+    lat: at.lat,
+    lng: at.lng,
+    street: '?',
+    number: '?',
+    entranceName: 'Sc. 1',
+    coordsConfirmed: true,
+    correctedLat: null,
+    correctedLng: null,
+    addressConfirmed: false,
+    stories: null,
+    flats: null,
+    elevators: null,
+    yearBuilt: null,
+    groundFloorCommercial: null,
+    comment: null,
+    surveyStatus: 'in_progress',
+    surveyedBy: null,
+    surveyedAt: null,
+    syncState: 'pending',
+  });
+
+  return entranceId;
+}
