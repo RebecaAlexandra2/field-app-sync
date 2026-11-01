@@ -9,6 +9,7 @@ import 'screens/inbox_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/route_screen.dart';
 import 'screens/survey_screen.dart';
+import 'session.dart';
 import 'store.dart';
 
 Future<void> main() async {
@@ -17,6 +18,9 @@ Future<void> main() async {
   final fixtures = await Fixtures.load();
   final db = AppDatabase();
   await db.seedIfEmpty(fixtures.buildings, fixtures.entrances);
+
+  final savedTab = await lastTab();
+  _startAt = _tabs.contains(savedTab) ? savedTab : '/map';
 
   runApp(
     ProviderScope(
@@ -29,8 +33,11 @@ Future<void> main() async {
   );
 }
 
+const _tabs = ['/map', '/route', '/inbox'];
+var _startAt = _tabs.first;
+
 final _router = GoRouter(
-  initialLocation: '/map',
+  initialLocation: _startAt,
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => TabsShell(shell: shell),
@@ -93,14 +100,8 @@ class FieldApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'Field app',
       routerConfig: _router,
-      theme: ThemeData(
-        colorSchemeSeed: seed,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        colorSchemeSeed: seed,
-        brightness: Brightness.dark,
-      ),
+      theme: ThemeData(colorSchemeSeed: seed, brightness: Brightness.light),
+      darkTheme: ThemeData(colorSchemeSeed: seed, brightness: Brightness.dark),
       themeMode: ThemeMode.system,
     );
   }
@@ -119,9 +120,7 @@ class TabsShell extends ConsumerWidget {
         .where((m) => m.authorId != f.me && !m.readAt.containsKey(f.me))
         .where(
           (m) => f.conversations.any(
-            (c) =>
-                c.id == m.conversationId &&
-                c.participantIds.contains(f.me),
+            (c) => c.id == m.conversationId && c.participantIds.contains(f.me),
           ),
         )
         .length;
@@ -130,8 +129,10 @@ class TabsShell extends ConsumerWidget {
       body: shell,
       bottomNavigationBar: NavigationBar(
         selectedIndex: shell.currentIndex,
-        onDestinationSelected: (i) =>
-            shell.goBranch(i, initialLocation: i == shell.currentIndex),
+        onDestinationSelected: (i) {
+          shell.goBranch(i, initialLocation: i == shell.currentIndex);
+          saveLastTab(_tabs[i]);
+        },
         destinations: [
           const NavigationDestination(
             icon: Icon(Icons.map_outlined),

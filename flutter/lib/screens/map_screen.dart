@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_map/flutter_map.dart';
@@ -9,6 +10,7 @@ import 'package:uuid/uuid.dart';
 import '../contract/contract.dart';
 import '../location.dart';
 import '../providers.dart';
+import '../session.dart';
 import 'status_chip.dart';
 
 const tiles = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -69,6 +71,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         .where((e) => e.surveyStatus != SurveyStatus.not_started)
         .length;
 
+    final links =
+        ref.watch(connectivityProvider).value ??
+        const [ConnectivityResult.other];
+
+    final online = !links.contains(ConnectivityResult.none);
+    final token = ref.watch(tokenProvider).value;
+
     return Stack(
       children: [
         FlutterMap(
@@ -119,9 +128,42 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     horizontal: 16,
                     vertical: 12,
                   ),
-                  child: Text(
-                    '${entrances.length} entrances · $done surveyed',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${entrances.length} entrances · $done surveyed',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Chip(
+                            visualDensity: VisualDensity.compact,
+                            backgroundColor: online
+                                ? const Color(0xFF16A34A)
+                                : const Color(0xFF6B7280),
+                            label: Text(
+                              online
+                                  ? 'Online · ${links.isEmpty ? 'unknown' : links.first.name}'
+                                  : 'Offline — saved on the phone',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            token == null
+                                ? 'token …'
+                                : 'token ••••${token.substring(token.length - 4)}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
