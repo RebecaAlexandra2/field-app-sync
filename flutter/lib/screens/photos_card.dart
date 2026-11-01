@@ -72,6 +72,18 @@ class _PhotosCardState extends ConsumerState<PhotosCard> {
                       ),
               child: Text(_busy ? 'Saving…' : 'Take a photo'),
             ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: _busy
+                  ? null
+                  : () => _run(
+                        () => pickPhoto(context, ref, widget.entranceId),
+                      ),
+              child: const Text('From the gallery'),
+            ),
             if (_error != null)
               Text(_error!, style: TextStyle(color: errorColor)),
             if (found.hasError)

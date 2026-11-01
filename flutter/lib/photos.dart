@@ -118,3 +118,52 @@ Future<ExifSummary?> takePhoto(
     takenAt: takenAt,
   );
 }
+
+String? _exifTime(String? shotAt) {
+  if (shotAt == null) return null;
+
+  final match = RegExp(
+    r'^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})',
+  ).firstMatch(shotAt);
+
+  if (match == null) return null;
+
+  final values = [
+    for (var i = 1; i <= 6; i++) int.parse(match.group(i)!),
+  ];
+
+  return DateTime(
+    values[0],
+    values[1],
+    values[2],
+    values[3],
+    values[4],
+    values[5],
+  ).toUtc().toIso8601String();
+}
+
+Future<ExifSummary?> pickPhoto(
+  BuildContext context,
+  WidgetRef ref,
+  String entranceId,
+) async {
+  final db = ref.read(databaseProvider);
+
+  final picked = await ImagePicker().pickImage(
+    source: ImageSource.gallery,
+  );
+
+  if (picked == null || !context.mounted) return null;
+
+  final exif = await readExif(await picked.readAsBytes());
+
+  final takenAt = _exifTime(exif.shotAt) ??
+      DateTime.now().toUtc().toIso8601String();
+
+  return _save(
+    db,
+    entranceId,
+    picked,
+    takenAt: takenAt,
+  );
+}
