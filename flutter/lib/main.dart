@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'db/database.dart';
 
 import 'screens/entrance_screen.dart';
 import 'screens/inbox_screen.dart';
@@ -10,10 +11,14 @@ import 'store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final store = FieldStore(await Fixtures.load());
+
+  final fixtures = await Fixtures.load();
+  final db = AppDatabase();
+  await db.seedIfEmpty(fixtures.buildings, fixtures.entrances);
+
+  final store = FieldStore(fixtures);
   runApp(StoreScope(store: store, child: const FieldApp()));
 }
-
 final _router = GoRouter(
   initialLocation: '/map',
   routes: [
