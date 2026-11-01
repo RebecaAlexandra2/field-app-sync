@@ -1,50 +1,114 @@
+import {
+  Camera,
+  Map as MapLibreMap,
+  Marker,
+  type StyleSpecification,
+  TransformRequestManager,
+} from '@maplibre/maplibre-react-native';
 import { router } from 'expo-router';
-import { StyleSheet, Text } from 'react-native';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
+import { StyleSheet, Text, View } from 'react-native';
 import { useEntrances } from '../store';
 import { statusColor, statusLabel } from '../theme';
 
-// OpenStreetMap's public tiles, weeks 2–4. Week 5 swaps this one constant for
-// the course's own Bucharest tiles.
 const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const BUCHAREST = {
-  latitude: 44.4355,
-  longitude: 26.1025,
-  latitudeDelta: 0.06,
-  longitudeDelta: 0.06,
+
+TransformRequestManager.addHeader({
+  id: 'osm-user-agent',
+  name: 'User-Agent',
+  value: 'FieldApp/1.0 (ro.rau.field_app; Mobile Devices Programming, RAU)',
+  match: 'tile\\.openstreetmap\\.org',
+});
+
+const OSM_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {
+    osm: {
+      type: 'raster',
+      tiles: [TILES],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: '© OpenStreetMap contributors',
+    },
+  },
+  layers: [
+    {
+      id: 'osm',
+      type: 'raster',
+      source: 'osm',
+    },
+  ],
 };
+
+const BUCHAREST: [number, number] = [26.1025, 44.4355];
 
 export function EntranceMap() {
   const entrances = useEntrances();
+
   return (
     <>
-      <MapView
+      <MapLibreMap
         style={StyleSheet.absoluteFill}
-        initialRegion={BUCHAREST}
+        mapStyle={OSM_STYLE}
       >
-        {/* Our tiles over the platform's base map (Google on Android, Apple
-            on iOS, where shouldReplaceMapContent hides Apple's). */}
-        <UrlTile urlTemplate={TILES} maximumZ={19} shouldReplaceMapContent />
+        <Camera
+          initialViewState={{
+            center: BUCHAREST,
+            zoom: 13,
+          }}
+        />
+
         {entrances.map((e) => (
           <Marker
             key={e.id}
-            coordinate={{
-              latitude: e.correctedLat ?? e.lat,
-              longitude: e.correctedLng ?? e.lng,
-            }}
-            title={`${e.street} ${e.number}, ${e.entranceName}`}
-            description={statusLabel[e.surveyStatus]}
-            pinColor={statusColor[e.surveyStatus]}
-            onCalloutPress={() => router.push(`/entrances/${e.id}`)}
-          />
+            id={e.id}
+            lngLat={[
+              e.correctedLng ?? e.lng,
+              e.correctedLat ?? e.lat,
+            ]}
+            anchor="center"
+            onPress={() => router.push(`/entrances/${e.id}`)}
+          >
+            <View
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={
+                `${e.street} ${e.number}, ${e.entranceName}, ` +
+                statusLabel[e.surveyStatus]
+              }
+              style={styles.hit}
+            >
+              <View
+                style={[
+                  styles.pin,
+                  { backgroundColor: statusColor[e.surveyStatus] },
+                ]}
+              />
+            </View>
+          </Marker>
         ))}
-      </MapView>
-      <Text style={styles.attribution}>© OpenStreetMap contributors</Text>
+      </MapLibreMap>
+
+      <Text style={styles.attribution}>
+        © OpenStreetMap contributors
+      </Text>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  hit: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pin: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 3,
+    borderColor: '#ffffff',
+  },
   attribution: {
     position: 'absolute',
     right: 4,
