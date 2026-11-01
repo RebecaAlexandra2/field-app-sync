@@ -1,33 +1,38 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../permissions.dart';
+import '../location.dart';
 
-class HereCard extends StatefulWidget {
+class HereCard extends ConsumerStatefulWidget {
   const HereCard({super.key});
 
   @override
-  State<HereCard> createState() => _HereCardState();
+  ConsumerState<HereCard> createState() => _HereCardState();
 }
 
-class _HereCardState extends State<HereCard> {
-  String _location = 'not asked yet';
+class _HereCardState extends ConsumerState<HereCard> {
   bool _busy = false;
+  String? _error;
 
-  Future<void> _requestLocation() async {
-    setState(() => _busy = true);
+  Future<void> _locate() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
 
     try {
-      final allowed = await ensureLocation(context);
+      final fix = await locate(context, ref);
 
       if (!mounted) return;
 
-      setState(() {
-        _location = allowed ? 'allowed' : 'not allowed';
-      });
+      if (fix == null) {
+        setState(() => _error = 'Location: not allowed');
+      }
     } catch (error) {
-      if (!mounted) return;
-
-      setState(() => _location = 'error: $error');
+      if (mounted) {
+        setState(() => _error = 'Could not get location: $error');
+      }
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -37,22 +42,49 @@ class _HereCardState extends State<HereCard> {
 
   @override
   Widget build(BuildContext context) {
+    final fix = ref.watch(fixProvider);
+    final heading =
+        fix == null ? null : ref.watch(headingProvider).value;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Location: $_location'),
-            // image_picker foloseste camera sistemului;
-            // aplicatia nu cere permisiunea CAMERA.
+            Text(
+              fix != null
+                  ? 'You: ${fix.lat.toStringAsFixed(5)}, '
+                      '${fix.lng.toStringAsFixed(5)} · '
+                      '±${fix.accuracy.round()} m'
+                  : _busy
+                      ? 'Finding you…'
+                      : 'No position yet',
+            ),
+            const SizedBox(height: 8),
+            Text(
+              heading != null
+                  ? 'Facing: ${heading.round()}° ${compassPoint(heading)}'
+                  : kIsWeb
+                      ? 'Facing: no compass on the web'
+                      : 'Facing: waiting for the compass',
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             OutlinedButton(
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
               ),
-              onPressed: _busy ? null : _requestLocation,
-              child: Text(_busy ? 'Checking…' : 'Where am I?'),
+              onPressed: _busy ? null : _locate,
+              child: Text(_busy ? 'Finding you…' : 'Where am I?'),
             ),
           ],
         ),
