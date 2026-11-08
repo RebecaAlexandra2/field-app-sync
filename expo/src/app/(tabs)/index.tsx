@@ -1,7 +1,10 @@
+import { signOut } from 'firebase/auth';
+import { auth } from '../../firebase';
+import { SyncBar } from '../../components/SyncBar';
 import * as Haptics from 'expo-haptics';
 import { useNetworkState } from 'expo-network';
-import { Redirect, router } from 'expo-router';
-import { useState } from 'react';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Platform,
@@ -13,13 +16,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EntranceMap } from '../../components/EntranceMap';
 import { locate } from '../../location';
-import { lastTab, useToken } from '../../session';
+import { lastTab } from '../../session';
 import { addMissedEntrance, useEntrances } from '../../store';
 import { useColors } from '../../theme';
 
-let reopen = Platform.OS === 'web' ? null : lastTab.get();
-
 export default function MapScreen() {
+  const [reopen] = useState(() => Platform.OS === 'web' ? null : lastTab.get());
+  useEffect(() => {
+    if (reopen === '/route' || reopen === '/inbox') router.replace(reopen);
+  }, [reopen]);
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const entrances = useEntrances();
@@ -30,7 +35,7 @@ export default function MapScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const network = useNetworkState();
-  const token = useToken();
+  
 
   const online =
     network.isConnected !== false &&
@@ -66,22 +71,13 @@ export default function MapScreen() {
     }
   };
 
-  if (reopen === '/route' || reopen === '/inbox') {
-    const to = reopen;
-    reopen = null;
-    return <Redirect href={to} />;
-  }
-
-  reopen = null;
-
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <EntranceMap />
-
       <View
         style={[
           styles.banner,
           { top: insets.top + 8, backgroundColor: colors.card },
+          Platform.OS === 'web' && { position: 'relative', top: 0, left: 0, right: 0, margin: 16 },
         ]}
       >
         <Text style={{ color: colors.text, fontWeight: '600' }}>
@@ -103,14 +99,17 @@ export default function MapScreen() {
           </View>
 
           <Text style={{ color: colors.muted, fontSize: 12 }}>
-            token {token ? `••••${token.slice(-4)}` : '…'}
-          </Text>
+            {auth.currentUser?.email}</Text>
         </View>
 
+        <Pressable accessibilityRole="button" onPress={() => signOut(auth)}><Text style={{ color: colors.primary }}>Sign out</Text></Pressable>
+        <SyncBar />
         {error && (
           <Text style={{ color: colors.error }}>{error}</Text>
         )}
       </View>
+
+      <View style={{ flex: 1 }}><EntranceMap /></View>
 
       <Pressable
         accessibilityRole="button"

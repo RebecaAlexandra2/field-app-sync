@@ -68,7 +68,7 @@ export function Photos({ entranceId }: { entranceId: string }) {
 
       {exif && (
         <Text style={{ color: colors.muted }}>
-          Last file's EXIF: {exif.camera ?? 'no camera name'} ·{' '}
+          Last file&apos;s EXIF: {exif.camera ?? 'no camera name'} ·{' '}
           {exif.shotAt ?? 'no time'} · GPS in EXIF:{' '}
           {exif.gpsInExif ? 'yes' : 'no'}
         </Text>
@@ -98,6 +98,10 @@ export function Photos({ entranceId }: { entranceId: string }) {
 
             <Text style={{ color: colors.muted }} numberOfLines={1}>
               {p.fileName}
+            </Text>
+            <Text style={{ color: colors.muted }}>
+              upload: {p.uploadState}
+              {p.lastError ? ` (${p.lastError})` : ''}
             </Text>
           </View>
         </View>
