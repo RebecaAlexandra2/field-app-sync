@@ -1,3 +1,5 @@
+import '../sync.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -141,6 +143,7 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
       await ref
           .read(databaseProvider)
           .submitSurvey(candidate, ref.read(meProvider));
+      pushSurveys(ref);
 
       try {
         await HapticFeedback.mediumImpact();

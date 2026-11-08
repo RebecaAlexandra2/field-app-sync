@@ -1,3 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
+import 'sync_bar.dart';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
@@ -76,7 +80,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         const [ConnectivityResult.other];
 
     final online = !links.contains(ConnectivityResult.none);
-    final token = ref.watch(tokenProvider).value;
 
     return Stack(
       children: [
@@ -135,6 +138,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         '${entrances.length} entrances · $done surveyed',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
+                      const SyncBar(),
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 8,
@@ -156,10 +160,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             ),
                           ),
                           Text(
-                            token == null
-                                ? 'token …'
-                                : 'token ••••${token.substring(token.length - 4)}',
+                            FirebaseAuth.instance.currentUser?.email ?? '',
                             style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          TextButton(
+                            onPressed: () => FirebaseAuth.instance.signOut(),
+                            child: const Text("Sign out"),
                           ),
                         ],
                       ),
