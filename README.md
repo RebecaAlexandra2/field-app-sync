@@ -95,6 +95,8 @@ flutter run -d emulator-5554 --dart-define=USE_EMULATORS=true --dart-define=UPLO
 Web reaches the services on localhost; the Android emulator uses `10.0.2.2`.
 The Emulator UI is at http://127.0.0.1:4000/. Create accounts in the emulator
 and seed its pins separately; its database is separate from the live project.
+When switching between the live project and the emulators, sign out once before
+signing in to the other backend.
 Use `--export-on-exit=emulator-data` and `--import=emulator-data` to preserve
 emulator data across runs. The exported directory is Git-ignored.
 

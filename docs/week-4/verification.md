@@ -10,6 +10,8 @@ No billing was enabled.
   remain when running without `--quiet`.
 - Flutter analysis: only the three existing enum naming informational messages.
 - Flutter web release build: passed.
+- Flutter Android x64 debug APK: build passed.
+- Expo Android x64 development APK: build passed, including AsyncStorage.
 - Five Drift database tests: passed, using the Windows system SQLite library
   temporarily for this test run. The package's bundled Windows DLL download was
   unavailable; the application configuration was restored after the test.
