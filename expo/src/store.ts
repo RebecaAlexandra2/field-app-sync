@@ -3,7 +3,7 @@ import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { create } from 'zustand';
 import * as Crypto from 'expo-crypto';
 import type { Building, Entrance, EntranceSurvey } from './contract/contract';
-import { auth } from './firebase';
+import { ME } from './contract/fixtures';
 import { db } from './db/db';
 import { buildings, entrances } from './db/schema';
 
@@ -112,7 +112,7 @@ export async function submitSurvey(id: string, survey: EntranceSurvey) {
     .set({
       ...survey,
       surveyStatus: 'submitted',
-      surveyedBy: auth.currentUser?.uid ?? null,
+      surveyedBy: ME,
       surveyedAt: now,
       updatedAt: now,
       syncState: 'pending', // the office has not seen this version yet
