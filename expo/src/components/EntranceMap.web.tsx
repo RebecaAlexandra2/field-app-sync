@@ -36,7 +36,7 @@ export function EntranceMap() {
 }
 
 const styles = StyleSheet.create({
-  list: { padding: 16, paddingTop: 72, gap: 8 },
+  list: { padding: 16, gap: 8 },
   note: { marginBottom: 8 },
   row: {
     minHeight: 48,

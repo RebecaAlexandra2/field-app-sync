@@ -1,3 +1,5 @@
+import { auth } from '../../firebase';
+import { pushSurveys } from '../../sync';
 import { useForm } from '@tanstack/react-form';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -61,6 +63,8 @@ function SurveyForm({ id, entrance }: { id: string; entrance: Entrance }) {
 
       try {
         await submitSurvey(id, EntranceSurvey.parse(value));
+      const uid = auth.currentUser?.uid;
+      if (uid) void pushSurveys(uid).catch(console.warn);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
         return;
